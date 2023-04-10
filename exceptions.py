@@ -1,18 +1,16 @@
 class TokenError(Exception):
-    pass
+    """Ошибки проверки токена."""
 
-
-class SendMessageError(Exception):
     pass
 
 
 class ApiAnswerError(Exception):
-    pass
+    """Ошибки ответа сервера."""
 
-
-class ResponseError(Exception):
     pass
 
 
 class StatusError(Exception):
+    """Ошибки статуса работы."""
+
     pass
