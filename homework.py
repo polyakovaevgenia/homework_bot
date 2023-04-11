@@ -15,11 +15,7 @@ from exceptions import (TokenError,
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
@@ -42,9 +38,8 @@ def check_tokens():
     token_list = [PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]
     if all(token_list):
         return True
-    else:
-        logger.critical('Отсутствует обязательная переменная')
-        raise TokenError('Токен отсутствует')
+    logger.critical('Отсутствует обязательная переменная')
+    raise TokenError('Токен отсутствует')
 
 
 def send_message(bot, message):
@@ -72,11 +67,10 @@ def get_api_answer(timestamp):
         message = f'Эндпоинт {ENDPOINT} недоступен'
         raise ApiAnswerError(message)
     try:
-        response.json()
+        response = response.json()
     except json.decoder.JSONDecodeError:
         message = 'Ответ сервера не может быть преобразован в JSON'
         raise ApiAnswerError(message)
-    response = response.json()
     return response
 
 
@@ -92,14 +86,13 @@ def check_response(response):
         raise KeyError(message)
     if not isinstance(response.get('homeworks'), list):
         raise TypeError('homeworks не соответствует формату list')
-    return True
 
 
 def parse_status(homework):
     """Определяет статус проверки домашней работы."""
     homework_status = homework.get('status')
     homework_name = homework.get('homework_name')
-    if not homework_name:
+    if 'homework_name' not in homework:
         raise ValueError('Нет работы с таким названием')
     if homework_status not in HOMEWORK_VERDICTS:
         message = 'Неожиданный статус домашней работы'
@@ -120,15 +113,15 @@ def main():
         try:
             response = get_api_answer(timestamp)
             check_response(response)
+            saved_message = ''
             homework = response.get('homeworks')
             if homework:
                 homework_status = parse_status(homework[0])
+                send_message(bot, homework_status)
+                logger.debug('Сообщение о статусе работы отправлено')
+                timestamp = response['current_date']
             else:
-                time.sleep(RETRY_PERIOD)
-                continue
-            send_message(bot, homework_status)
-            logger.debug('Сообщение о статусе работы отправлено')
-            saved_message = ''
+                logger.debug('Новый статус работы отсутствует')
         except Exception as error:
             logger.error(error)
             message = f'Сбой в работе программы: {error}'
@@ -140,11 +133,9 @@ def main():
 
 
 if __name__ == '__main__':
-    # logger = logging.getLogger(__name__)
-    # logger.setLevel(logging.DEBUG)
-    # handler = logging.StreamHandler(sys.stdout)
-    # formatter = logging.Formatter(
-    # '%(asctime)s - %(levelname)s - %(message)s')
-    # handler.setFormatter(formatter)
-    # logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     main()
