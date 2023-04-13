@@ -113,15 +113,15 @@ def main():
         try:
             response = get_api_answer(timestamp)
             check_response(response)
-            saved_message = ''
+            timestamp = response['current_date']
             homework = response.get('homeworks')
             if homework:
                 homework_status = parse_status(homework[0])
                 send_message(bot, homework_status)
                 logger.debug('Сообщение о статусе работы отправлено')
-                timestamp = response['current_date']
             else:
                 logger.debug('Новый статус работы отсутствует')
+            saved_message = ''
         except Exception as error:
             logger.error(error)
             message = f'Сбой в работе программы: {error}'
